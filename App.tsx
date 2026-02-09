@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Camera as CameraIcon, 
@@ -22,9 +21,6 @@ import SolutionDisplay from './components/SolutionDisplay';
 import VoiceAssistant from './components/VoiceAssistant';
 import { solveFromImage, chatWithProfessor } from './services/geminiService';
 import { AppMode, Solution, ResponseMode } from './types';
-
-// Placeholder para o AdMob (Para ser usado após npx cap add android/ios)
-// import { AdMob, BannerAdSize, BannerAdPosition, BannerAdPluginEvents, AdMobBannerSize } from 'capacitor-admob';
 
 const AdPlaceholder = () => (
   <div className="w-full p-4 bg-slate-100 dark:bg-slate-900/50 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl flex flex-col items-center justify-center gap-2 min-h-[100px] my-4 opacity-60">
@@ -50,24 +46,6 @@ const App: React.FC = () => {
     }
     return 'light';
   });
-
-  // Inicialização do AdMob quando o componente monta (apenas em ambiente nativo)
-  useEffect(() => {
-    /* 
-    const initAdMob = async () => {
-      try {
-        await AdMob.initialize({
-          requestTrackingAuthorization: true,
-          testingDevices: ['YOUR_DEVICE_ID'],
-          initializeForTesting: true,
-        });
-      } catch (e) {
-        console.log("Ambiente Web detectado, AdMob Nativo ignorado.");
-      }
-    };
-    initAdMob();
-    */
-  }, []);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -131,13 +109,8 @@ const App: React.FC = () => {
     }
   };
 
-  const clearSession = () => {
-    setActiveSolutions([]);
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col transition-all duration-700 select-none">
-      {/* Safe Area Inset para Apps Nativo */}
       <div className="h-[env(safe-area-inset-top)] bg-white dark:bg-slate-900"></div>
       
       <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-30 dark:opacity-20 z-0">
@@ -182,8 +155,7 @@ const App: React.FC = () => {
           <div className="space-y-12">
             <div className="max-w-2xl mx-auto text-center space-y-4">
               <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
-                {responseMode === ResponseMode.SIMPLE ? "Resposta" : "Análise"}{" "}
-                <span className="text-brand-600 dark:text-brand-400">Deep Resolve.</span>
+                O Professor de Matemática <span className="text-brand-600 dark:text-brand-400">Resolve.</span>
               </h2>
             </div>
             
@@ -272,7 +244,6 @@ const App: React.FC = () => {
           </nav>
         </div>
       </footer>
-      {/* Safe Area Inset para o rodapé em Apps Nativo */}
       <div className="h-[env(safe-area-inset-bottom)] bg-transparent"></div>
     </div>
   );
@@ -281,7 +252,7 @@ const App: React.FC = () => {
 const NavButton = ({ active, onClick, icon, label }: any) => (
   <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400'}`}>
     <div className={`p-3 rounded-2xl transition-all ${active ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30 scale-110' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-      {React.cloneElement(icon as React.ReactElement, { className: 'w-6 h-6' })}
+      {React.cloneElement(icon as React.cloneElement, { className: 'w-6 h-6' })}
     </div>
     <span className="text-[9px] font-black uppercase tracking-tighter">{label}</span>
   </button>
