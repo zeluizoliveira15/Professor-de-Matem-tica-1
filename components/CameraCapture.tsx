@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Zap, AlertCircle, Maximize2, ShieldCheck, Camera as CameraIcon, Power, Plus, Minus } from 'lucide-react';
+import { RefreshCw, Zap, AlertCircle, Maximize2, ShieldCheck, Camera as CameraIcon, Power } from 'lucide-react';
 
 interface CameraCaptureProps {
   onCapture: (base64Image: string) => void;
@@ -220,21 +220,6 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, isProcessing }
         </div>
         <div className="w-full h-1/4 bg-black/40 backdrop-blur-[2px]"></div>
       </div>
-
-      {/* Zoom Slider UI */}
-      {zoomCapabilities && !isProcessing && (
-        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4 bg-black/40 backdrop-blur-xl p-3 rounded-full border border-white/10 z-30">
-          <button onClick={() => applyZoom(Math.min(zoom + 0.5, zoomCapabilities.max))} className="p-1 text-white hover:text-brand-400"><Plus className="w-5 h-5"/></button>
-          <div className="h-32 w-1.5 bg-white/20 rounded-full relative overflow-hidden">
-            <div 
-              className="absolute bottom-0 left-0 right-0 bg-brand-500 transition-all duration-200" 
-              style={{ height: `${((zoom - zoomCapabilities.min) / (zoomCapabilities.max - zoomCapabilities.min)) * 100}%` }}
-            />
-          </div>
-          <button onClick={() => applyZoom(Math.max(zoom - 0.5, zoomCapabilities.min))} className="p-1 text-white hover:text-brand-400"><Minus className="w-5 h-5"/></button>
-          <div className="text-[10px] text-white font-black">{zoom.toFixed(1)}x</div>
-        </div>
-      )}
 
       {/* Interface Overlays */}
       <div className="absolute inset-0 flex flex-col justify-between p-8 pointer-events-none">
