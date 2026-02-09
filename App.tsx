@@ -85,7 +85,7 @@ const App: React.FC = () => {
     }
     setIsSolving(true);
     try {
-      const result = await solveFromImage(base64Image, isThinkingMode, responseMode);
+      const result = await solveFromImage(base64Image, isThinkingMode, responseMode, language);
       
       const newEntry: Solution = {
         id: Date.now().toString(),
@@ -115,7 +115,7 @@ const App: React.FC = () => {
     const text = chatInput;
     setChatInput('');
     try {
-      const result = await chatWithProfessor(text, responseMode);
+      const result = await chatWithProfessor(text, responseMode, language);
       const newEntry: Solution = {
         id: Date.now().toString(),
         timestamp: Date.now(),

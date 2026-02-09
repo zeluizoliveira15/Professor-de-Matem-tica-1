@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type, GenerateContentResponse, Modality } from "@google/genai";
-import { ResponseMode } from "../types";
+import { ResponseMode, Language } from "../types";
 
 const getAI = () => {
   const apiKey = process.env.API_KEY;
@@ -13,19 +13,29 @@ const cleanOutput = (text: string): string => {
   return text.replace(/[\$\*\_\#]/g, '').trim();
 };
 
+const getLanguageName = (lang: Language): string => {
+  switch (lang) {
+    case Language.EN: return "English";
+    case Language.ES: return "Spanish";
+    default: return "Portuguese (Brazil)";
+  }
+};
+
 export const solveFromImage = async (
   base64Image: string, 
   thinking: boolean = true, 
-  mode: ResponseMode = ResponseMode.EXPLAINED
+  mode: ResponseMode = ResponseMode.EXPLAINED,
+  language: Language = Language.PT
 ): Promise<string> => {
   const ai = getAI();
   if (!ai) throw new Error("API Config missing.");
 
   const modelName = 'gemini-3-flash-preview';
+  const langName = getLanguageName(language);
   
   const prompt = mode === ResponseMode.SIMPLE 
-    ? "Solve the math problem in the image. Give ONLY the final result. No symbols or markdown. Translate result to local language if applicable." 
-    : "Solve the math problem. Explain step-by-step briefly (max 3 lines). No markdown. Answer in the same language as the UI.";
+    ? `Solve the math problem in the image. Give ONLY the final result. No symbols or markdown. You MUST answer in ${langName}.` 
+    : `Solve the math problem. Explain step-by-step briefly (max 3 lines). No markdown. You MUST answer in ${langName}.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -36,7 +46,7 @@ export const solveFromImage = async (
           { text: prompt }
         ]
       },
-      config: { temperature: 0.2 }
+      config: { temperature: 0.1 }
     });
 
     return cleanOutput(response.text || "Error");
@@ -48,14 +58,16 @@ export const solveFromImage = async (
 
 export const chatWithProfessor = async (
   message: string, 
-  mode: ResponseMode = ResponseMode.EXPLAINED
+  mode: ResponseMode = ResponseMode.EXPLAINED,
+  language: Language = Language.PT
 ): Promise<string> => {
   const ai = getAI();
   if (!ai) throw new Error("API Config missing.");
 
+  const langName = getLanguageName(language);
   const instruction = mode === ResponseMode.SIMPLE 
-    ? 'You are a direct math professor. Give ONLY the result without explanation.' 
-    : 'You are a STEM professor. Solve and explain briefly without markdown symbols. Respond in the user\'s language.';
+    ? `You are a direct math professor. Give ONLY the result without explanation. Answer in ${langName}.` 
+    : `You are a STEM professor. Solve and explain briefly without markdown symbols. You MUST answer in ${langName}.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -63,7 +75,7 @@ export const chatWithProfessor = async (
       contents: message,
       config: {
         systemInstruction: instruction,
-        temperature: 0.4
+        temperature: 0.3
       }
     });
 
