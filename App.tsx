@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Camera as CameraIcon, 
@@ -13,20 +14,22 @@ import {
   Cpu,
   Zap,
   Trash2,
-  DollarSign
+  DollarSign,
+  Languages
 } from 'lucide-react';
 import Logo from './components/Logo';
 import CameraCapture from './components/CameraCapture';
 import SolutionDisplay from './components/SolutionDisplay';
 import VoiceAssistant from './components/VoiceAssistant';
 import { solveFromImage, chatWithProfessor } from './services/geminiService';
-import { AppMode, Solution, ResponseMode } from './types';
+import { AppMode, Solution, ResponseMode, Language } from './types';
+import { translations } from './translations';
 
 const AdPlaceholder = () => (
   <div className="w-full p-4 bg-slate-100 dark:bg-slate-900/50 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl flex flex-col items-center justify-center gap-2 min-h-[100px] my-4 opacity-60">
     <div className="flex items-center gap-2 text-slate-400">
       <DollarSign className="w-4 h-4" />
-      <span className="text-[10px] font-black uppercase tracking-widest">Espaço para Anúncio AdMob</span>
+      <span className="text-[10px] font-black uppercase tracking-widest">AdMob Space</span>
     </div>
   </div>
 );
@@ -39,6 +42,15 @@ const App: React.FC = () => {
   const [chatInput, setChatInput] = useState('');
   const [isThinkingMode, setIsThinkingMode] = useState(true);
   const [responseMode, setResponseMode] = useState<ResponseMode>(ResponseMode.EXPLAINED);
+  
+  const [language, setLanguage] = useState<Language>(() => {
+    const saved = localStorage.getItem('app-lang');
+    if (saved) return saved as Language;
+    const browserLang = navigator.language.split('-')[0].toUpperCase();
+    if (Object.values(Language).includes(browserLang as Language)) return browserLang as Language;
+    return Language.PT;
+  });
+
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') as 'light' | 'dark' || 
@@ -46,6 +58,8 @@ const App: React.FC = () => {
     }
     return 'light';
   });
+
+  const t = translations[language];
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -55,10 +69,18 @@ const App: React.FC = () => {
   }, [theme]);
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  
+  const cycleLanguage = () => {
+    const langs = Object.values(Language);
+    const nextIndex = (langs.indexOf(language) + 1) % langs.length;
+    const nextLang = langs[nextIndex];
+    setLanguage(nextLang);
+    localStorage.setItem('app-lang', nextLang);
+  };
 
   const handleCapture = async (base64Image: string) => {
     if (!process.env.API_KEY) {
-        alert("Configuração Necessária: Defina a variável de ambiente API_KEY no seu ambiente de build.");
+        alert("API_KEY missing.");
         return;
     }
     setIsSolving(true);
@@ -79,7 +101,7 @@ const App: React.FC = () => {
       if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(50);
     } catch (err) {
       console.error(err);
-      alert("Falha na conexão neural.");
+      alert("Neural connection failed.");
     } finally {
       setIsSolving(false);
     }
@@ -129,21 +151,23 @@ const App: React.FC = () => {
               <h1 className="text-xl font-black text-slate-900 dark:text-white leading-none tracking-tight">Professor Neural</h1>
               <p className="text-[10px] text-brand-600 dark:text-brand-400 font-extrabold tracking-[0.2em] uppercase mt-1.5 flex items-center gap-1.5">
                 <Cpu className="w-3 h-3" />
-                Mobile Neural Engine
+                Neural Engine
               </p>
             </div>
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700">
-               <button onClick={() => setResponseMode(ResponseMode.SIMPLE)} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${responseMode === ResponseMode.SIMPLE ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-400'}`}>Simples</button>
-               <button onClick={() => setResponseMode(ResponseMode.EXPLAINED)} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${responseMode === ResponseMode.EXPLAINED ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-400'}`}>Explicação</button>
+               <button onClick={() => setResponseMode(ResponseMode.SIMPLE)} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${responseMode === ResponseMode.SIMPLE ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-400'}`}>{t.simple}</button>
+               <button onClick={() => setResponseMode(ResponseMode.EXPLAINED)} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${responseMode === ResponseMode.EXPLAINED ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-400'}`}>{t.explanation}</button>
             </div>
-            <button onClick={() => setIsThinkingMode(!isThinkingMode)} className={`p-2.5 sm:px-4 sm:py-2.5 rounded-2xl flex items-center gap-2.5 transition-all font-black text-[11px] border ${isThinkingMode ? 'bg-brand-600 text-white border-brand-500 shadow-xl shadow-brand-600/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-transparent'}`}>
-              <Zap className={`w-4 h-4 ${isThinkingMode ? 'text-yellow-400 fill-yellow-400' : ''}`} />
-              <span className="hidden lg:inline uppercase tracking-widest">Neural</span>
+            
+            <button onClick={cycleLanguage} className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700 flex items-center gap-2">
+              <Languages className="w-4 h-4" />
+              <span className="text-[10px] font-black">{language}</span>
             </button>
-            <button onClick={toggleTheme} className="p-2.5 sm:p-3 rounded-2xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
+
+            <button onClick={toggleTheme} className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             </button>
           </div>
@@ -155,12 +179,12 @@ const App: React.FC = () => {
           <div className="space-y-12">
             <div className="max-w-2xl mx-auto text-center space-y-4">
               <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
-                O Professor de Matemática <span className="text-brand-600 dark:text-brand-400">Resolve.</span>
+                {t.title} <span className="text-brand-600 dark:text-brand-400">{t.titleSuffix}</span>
               </h2>
             </div>
             
             <div className="max-w-3xl mx-auto">
-              <CameraCapture onCapture={handleCapture} isProcessing={isSolving} />
+              <CameraCapture onCapture={handleCapture} isProcessing={isSolving} language={language} />
             </div>
 
             {isSolving && (
@@ -169,14 +193,14 @@ const App: React.FC = () => {
                   <div className="absolute inset-0 bg-brand-500/20 blur-2xl animate-pulse rounded-full"></div>
                   <Loader2 className="w-full h-full text-brand-600 dark:text-brand-400 animate-spin relative z-10" />
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 font-bold italic animate-pulse text-sm">Escaneando fórmula...</p>
+                <p className="text-slate-500 dark:text-slate-400 font-bold italic animate-pulse text-sm">{t.analisando}</p>
               </div>
             )}
 
             <div className="max-w-4xl mx-auto space-y-8 mt-12">
               {activeSolutions.map((solution, index) => (
                 <React.Fragment key={solution.id}>
-                  <SolutionDisplay content={solution.answer} isThinking={isThinkingMode} />
+                  <SolutionDisplay content={solution.answer} isThinking={isThinkingMode} language={language} />
                   {(index + 1) % 2 === 0 && <AdPlaceholder />}
                 </React.Fragment>
               ))}
@@ -192,7 +216,7 @@ const App: React.FC = () => {
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Digite sua dúvida..."
+                placeholder={t.placeholderChat}
                 className="relative w-full p-6 pr-20 bg-white dark:bg-slate-900 rounded-[1.5rem] border-2 border-slate-100 dark:border-slate-800 focus:border-brand-500 outline-none shadow-xl transition-all font-semibold"
               />
               <button type="submit" className="absolute right-4 top-4 bottom-4 px-5 bg-brand-600 text-white rounded-xl shadow-lg">
@@ -203,7 +227,7 @@ const App: React.FC = () => {
             <div className="space-y-8">
               {activeSolutions.map((solution, index) => (
                 <React.Fragment key={solution.id}>
-                    <SolutionDisplay content={solution.answer} isThinking={isThinkingMode} />
+                    <SolutionDisplay content={solution.answer} isThinking={isThinkingMode} language={language} />
                     {(index + 1) % 3 === 0 && <AdPlaceholder />}
                 </React.Fragment>
               ))}
@@ -211,11 +235,11 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {mode === AppMode.VOICE && <VoiceAssistant />}
+        {mode === AppMode.VOICE && <VoiceAssistant language={language} />}
 
         {mode === AppMode.HISTORY && (
           <div className="max-w-4xl mx-auto space-y-6">
-            <h2 className="text-3xl font-black mb-8">Histórico Neural</h2>
+            <h2 className="text-3xl font-black mb-8">{t.historicoTitle}</h2>
             {history.map(item => (
               <div key={item.id} onClick={() => { setActiveSolutions([item]); setMode(AppMode.CAMERA); }} className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between cursor-pointer">
                 <div className="flex items-center gap-4">
@@ -237,14 +261,13 @@ const App: React.FC = () => {
       <footer className="fixed bottom-0 left-0 right-0 z-[100] safe-bottom pb-6 px-6 pointer-events-none">
         <div className="max-w-md mx-auto pointer-events-auto">
           <nav className="glass dark:bg-slate-900/95 border border-white/20 dark:border-slate-800 rounded-[2.5rem] shadow-2xl p-4 flex items-center justify-between">
-            <NavButton active={mode === AppMode.CAMERA} onClick={() => setMode(AppMode.CAMERA)} icon={<CameraIcon />} label="Scanner" />
-            <NavButton active={mode === AppMode.CHAT} onClick={() => setMode(AppMode.CHAT)} icon={<MessageSquare />} label="Chat" />
-            <NavButton active={mode === AppMode.VOICE} onClick={() => setMode(AppMode.VOICE)} icon={<Mic />} label="Voz" />
-            <NavButton active={mode === AppMode.HISTORY} onClick={() => setMode(AppMode.HISTORY)} icon={<HistoryIcon />} label="Logs" />
+            <NavButton active={mode === AppMode.CAMERA} onClick={() => setMode(AppMode.CAMERA)} icon={<CameraIcon />} label={t.scanner} />
+            <NavButton active={mode === AppMode.CHAT} onClick={() => setMode(AppMode.CHAT)} icon={<MessageSquare />} label={t.chat} />
+            <NavButton active={mode === AppMode.VOICE} onClick={() => setMode(AppMode.VOICE)} icon={<Mic />} label={t.voice} />
+            <NavButton active={mode === AppMode.HISTORY} onClick={() => setMode(AppMode.HISTORY)} icon={<HistoryIcon />} label={t.history} />
           </nav>
         </div>
       </footer>
-      <div className="h-[env(safe-area-inset-bottom)] bg-transparent"></div>
     </div>
   );
 };

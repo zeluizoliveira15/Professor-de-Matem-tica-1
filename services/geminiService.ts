@@ -1,20 +1,16 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse, Modality } from "@google/genai";
 import { ResponseMode } from "../types";
 
 const getAI = () => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    console.error("ERRO CRÍTICO: Variável API_KEY não definida no ambiente de build.");
-    return null;
-  }
+  if (!apiKey) return null;
   return new GoogleGenAI({ apiKey });
 };
 
 const cleanOutput = (text: string): string => {
   if (!text) return "";
-  return text
-    .replace(/[\$\*\_\#]/g, '')
-    .trim();
+  return text.replace(/[\$\*\_\#]/g, '').trim();
 };
 
 export const solveFromImage = async (
@@ -23,14 +19,13 @@ export const solveFromImage = async (
   mode: ResponseMode = ResponseMode.EXPLAINED
 ): Promise<string> => {
   const ai = getAI();
-  if (!ai) throw new Error("Configuração de API ausente.");
+  if (!ai) throw new Error("API Config missing.");
 
-  // Usando o modelo Flash por ser mais compatível e rápido para visão computacional
   const modelName = 'gemini-3-flash-preview';
   
   const prompt = mode === ResponseMode.SIMPLE 
-    ? "Resolva o cálculo da imagem. Dê apenas o resultado final. Não use símbolos como *, $, # ou markdown." 
-    : "Resolva o cálculo da imagem. Explique o passo a passo de forma muito breve (máximo 3 linhas). Não use símbolos markdown.";
+    ? "Solve the math problem in the image. Give ONLY the final result. No symbols or markdown. Translate result to local language if applicable." 
+    : "Solve the math problem. Explain step-by-step briefly (max 3 lines). No markdown. Answer in the same language as the UI.";
 
   try {
     const response = await ai.models.generateContent({
@@ -41,14 +36,12 @@ export const solveFromImage = async (
           { text: prompt }
         ]
       },
-      config: {
-        temperature: 0.2,
-      }
+      config: { temperature: 0.2 }
     });
 
-    return cleanOutput(response.text || "Não foi possível extrair o texto da resposta.");
+    return cleanOutput(response.text || "Error");
   } catch (error: any) {
-    console.error("Erro na API Gemini (Visão):", error);
+    console.error("Gemini Vision Error:", error);
     throw error;
   }
 };
@@ -58,11 +51,11 @@ export const chatWithProfessor = async (
   mode: ResponseMode = ResponseMode.EXPLAINED
 ): Promise<string> => {
   const ai = getAI();
-  if (!ai) throw new Error("Configuração de API ausente.");
+  if (!ai) throw new Error("API Config missing.");
 
   const instruction = mode === ResponseMode.SIMPLE 
-    ? 'Você é um professor direto. Dê apenas o resultado sem explicações ou símbolos.' 
-    : 'Você é um professor de exatas. Resolva e explique brevemente sem usar símbolos especiais.';
+    ? 'You are a direct math professor. Give ONLY the result without explanation.' 
+    : 'You are a STEM professor. Solve and explain briefly without markdown symbols. Respond in the user\'s language.';
 
   try {
     const response = await ai.models.generateContent({
@@ -74,9 +67,9 @@ export const chatWithProfessor = async (
       }
     });
 
-    return cleanOutput(response.text || "Erro na resposta do chat.");
+    return cleanOutput(response.text || "Error");
   } catch (error: any) {
-    console.error("Erro na API Gemini (Chat):", error);
+    console.error("Gemini Chat Error:", error);
     throw error;
   }
 };
@@ -110,7 +103,7 @@ export const generateSpeech = async (text: string): Promise<Uint8Array | null> =
     }
     return null;
   } catch (error) {
-    console.error("Erro ao gerar áudio:", error);
+    console.error("TTS Error:", error);
     return null;
   }
 };

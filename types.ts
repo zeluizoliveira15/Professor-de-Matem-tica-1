@@ -20,6 +20,12 @@ export enum ResponseMode {
   EXPLAINED = 'EXPLAINED'
 }
 
+export enum Language {
+  PT = 'PT',
+  EN = 'EN',
+  ES = 'ES'
+}
+
 export interface VoiceMessage {
   role: 'user' | 'model';
   text: string;

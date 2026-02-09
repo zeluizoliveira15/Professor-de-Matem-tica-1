@@ -3,12 +3,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Headset, Loader2, Sparkles } from 'lucide-react';
 import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
 import { decode, encode, decodeAudioData } from '../utils';
+import { Language } from '../types';
+import { translations } from '../translations';
 
-const VoiceAssistant: React.FC = () => {
+const VoiceAssistant: React.FC<{ language: Language }> = ({ language }) => {
   const [isActive, setIsActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [transcriptions, setTranscriptions] = useState<{ role: string, text: string }[]>([]);
   
+  const t = translations[language];
+
   const nextStartTimeRef = useRef(0);
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const sessionRef = useRef<any>(null);
@@ -87,7 +91,7 @@ const VoiceAssistant: React.FC = () => {
         },
         config: {
           responseModalities: [Modality.AUDIO],
-          systemInstruction: 'Você é o Professor de Matemática. Converse com o aluno sobre dúvidas de matemática, física e química em tempo real.',
+          systemInstruction: t.promptGemini + ' Solve math, physics, or chemistry problems. Always respond in ' + language + '.',
           outputAudioTranscription: {},
         }
       });
@@ -110,43 +114,29 @@ const VoiceAssistant: React.FC = () => {
         <div className="p-4 bg-brand-50 dark:bg-brand-900/30 rounded-2xl text-brand-600 dark:text-brand-400 mb-2">
           <Headset className="w-10 h-10" />
         </div>
-        <h3 className="text-2xl font-black text-slate-900 dark:text-white">Laboratório de Voz</h3>
+        <h3 className="text-2xl font-black text-slate-900 dark:text-white">{t.labVoz}</h3>
         <p className="text-slate-500 dark:text-slate-400 text-center max-w-xs font-medium text-sm">
-          Fale com o Professor sobre fórmulas complexas e teoria científica.
+          {t.labVozDesc}
         </p>
       </div>
 
       <div className="relative">
-        {isActive && (
-          <div className="absolute -inset-8 bg-brand-500 rounded-full animate-ping opacity-10"></div>
-        )}
-        <button
-          onClick={isActive ? stopSession : startSession}
-          disabled={isConnecting}
-          className={`relative z-10 w-28 h-28 rounded-full flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 shadow-2xl ${
-            isActive ? 'bg-red-500 text-white shadow-red-200 dark:shadow-none' : 'bg-brand-600 text-white shadow-brand-200 dark:shadow-none'
-          } ${isConnecting ? 'opacity-50 cursor-wait' : ''}`}
-        >
-          {isConnecting ? (
-            <Loader2 className="w-12 h-12 animate-spin" />
-          ) : isActive ? (
-            <MicOff className="w-12 h-12" />
-          ) : (
-            <Mic className="w-12 h-12" />
-          )}
+        {isActive && <div className="absolute -inset-8 bg-brand-500 rounded-full animate-ping opacity-10"></div>}
+        <button onClick={isActive ? stopSession : startSession} disabled={isConnecting} className={`relative z-10 w-28 h-28 rounded-full flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 shadow-2xl ${isActive ? 'bg-red-500 text-white' : 'bg-brand-600 text-white'} ${isConnecting ? 'opacity-50 cursor-wait' : ''}`}>
+          {isConnecting ? <Loader2 className="w-12 h-12 animate-spin" /> : isActive ? <MicOff className="w-12 h-12" /> : <Mic className="w-12 h-12" />}
         </button>
       </div>
 
       <div className="w-full h-32 overflow-y-auto space-y-3 px-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
         {transcriptions.length === 0 ? (
           <div className="h-full flex items-center justify-center text-slate-400 text-xs uppercase tracking-widest font-bold">
-            Aguardando sinal...
+            {t.aguardandoSinal}
           </div>
         ) : (
-          transcriptions.slice(-10).map((t, i) => (
-            <div key={i} className={`flex gap-2 text-sm ${t.role === 'professor' ? 'text-brand-600 dark:text-brand-400 font-bold' : 'text-slate-500 dark:text-slate-400 font-medium'}`}>
-              <span className="shrink-0 uppercase text-[10px] opacity-60 mt-0.5">{t.role === 'professor' ? 'Prof:' : 'Você:'}</span>
-              <span className="leading-tight">{t.text}</span>
+          transcriptions.slice(-10).map((tMsg, i) => (
+            <div key={i} className={`flex gap-2 text-sm ${tMsg.role === 'professor' ? 'text-brand-600 dark:text-brand-400 font-bold' : 'text-slate-500 dark:text-slate-400 font-medium'}`}>
+              <span className="shrink-0 uppercase text-[10px] opacity-60 mt-0.5">{tMsg.role === 'professor' ? t.prof : 'You:'}</span>
+              <span className="leading-tight">{tMsg.text}</span>
             </div>
           ))
         )}
@@ -155,11 +145,7 @@ const VoiceAssistant: React.FC = () => {
       {isActive && (
         <div className="flex items-end gap-1.5 h-10">
           {[0.4, 0.7, 1, 0.6, 0.8, 0.5, 0.9, 0.3].map((h, i) => (
-            <div 
-              key={i} 
-              className="w-2 bg-brand-500 dark:bg-brand-400 rounded-full animate-pulse transition-all duration-300" 
-              style={{ height: `${h * 100}%`, animationDelay: `${i * 0.15}s` }}
-            ></div>
+            <div key={i} className="w-2 bg-brand-500 dark:bg-brand-400 rounded-full animate-pulse" style={{ height: `${h * 100}%`, animationDelay: `${i * 0.15}s` }}></div>
           ))}
         </div>
       )}
