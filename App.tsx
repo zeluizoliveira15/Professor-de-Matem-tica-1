@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Camera as CameraIcon, 
@@ -41,7 +40,7 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<Solution[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isThinkingMode, setIsThinkingMode] = useState(true);
-  const [responseMode, setResponseMode] = useState<ResponseMode>(ResponseMode.EXPLAINED);
+  const [responseMode, setResponseMode] = useState<ResponseMode>(ResponseMode.SIMPLE);
   
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('app-lang');
@@ -167,7 +166,7 @@ const App: React.FC = () => {
               <span className="text-[10px] font-black">{language}</span>
             </button>
 
-            <button onClick={toggleTheme} className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-700">
+            <button onClick={toggleTheme} className="p-2.5 rounded-2xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800">
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             </button>
           </div>

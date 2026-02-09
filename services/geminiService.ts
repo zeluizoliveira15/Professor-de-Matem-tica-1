@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type, GenerateContentResponse, Modality } from "@google/genai";
 import { ResponseMode, Language } from "../types";
 
@@ -30,12 +29,13 @@ export const solveFromImage = async (
   const ai = getAI();
   if (!ai) throw new Error("API Config missing.");
 
-  const modelName = 'gemini-3-flash-preview';
+  // Utilizando o modelo Flash Lite para velocidade absoluta em cálculos diretos
+  const modelName = 'gemini-flash-lite-latest';
   const langName = getLanguageName(language);
   
   const prompt = mode === ResponseMode.SIMPLE 
-    ? `Solve the math problem in the image. Give ONLY the final result. No symbols or markdown. You MUST answer in ${langName}.` 
-    : `Solve the math problem. Explain step-by-step briefly (max 3 lines). No markdown. You MUST answer in ${langName}.`;
+    ? `Direct Result ONLY. Language: ${langName}.` 
+    : `Short step-by-step (max 2 lines). Language: ${langName}.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -46,7 +46,11 @@ export const solveFromImage = async (
           { text: prompt }
         ]
       },
-      config: { temperature: 0.1 }
+      config: { 
+        temperature: 0.0,
+        topP: 0.1,
+        topK: 1
+      }
     });
 
     return cleanOutput(response.text || "Error");
@@ -66,16 +70,16 @@ export const chatWithProfessor = async (
 
   const langName = getLanguageName(language);
   const instruction = mode === ResponseMode.SIMPLE 
-    ? `You are a direct math professor. Give ONLY the result without explanation. Answer in ${langName}.` 
-    : `You are a STEM professor. Solve and explain briefly without markdown symbols. You MUST answer in ${langName}.`;
+    ? `Direct math engine. ONLY result. Answer in ${langName}.` 
+    : `STEM professor. Brief solve. Answer in ${langName}.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-flash-lite-latest',
       contents: message,
       config: {
         systemInstruction: instruction,
-        temperature: 0.3
+        temperature: 0.1
       }
     });
 

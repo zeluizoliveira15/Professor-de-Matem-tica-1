@@ -37,11 +37,13 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, isProcessing, 
   const startCamera = useCallback(async () => {
     setError(null);
     try {
-      const constraints = {
+      const constraints: MediaStreamConstraints = {
         video: { 
           facingMode: 'environment',
           width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          height: { ideal: 1080 },
+          // @ts-ignore - Propriedade de foco pode não estar nos tipos padrão mas é suportada em muitos navegadores
+          focusMode: 'continuous'
         },
         audio: false
       };
@@ -49,7 +51,19 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, isProcessing, 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       const videoTrack = mediaStream.getVideoTracks()[0];
       
+      // Aplicar melhorias de foco adicionais se suportado
       const capabilities = (videoTrack as any).getCapabilities?.() || {};
+      
+      if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+        try {
+          await (videoTrack as any).applyConstraints({
+            advanced: [{ focusMode: 'continuous' }]
+          });
+        } catch (e) {
+          console.warn("Could not set continuous focus", e);
+        }
+      }
+
       if (capabilities.zoom) {
         setZoomCapabilities({
           min: capabilities.zoom.min,
