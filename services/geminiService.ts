@@ -1,12 +1,11 @@
-
 import { GoogleGenAI, Type, GenerateContentResponse, Modality } from "@google/genai";
 import { ResponseMode } from "../types";
 
-// Helper para obter a instância do AI com a chave de ambiente
 const getAI = () => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("API_KEY não encontrada. Verifique as variáveis de ambiente no Netlify.");
+    console.error("ERRO CRÍTICO: Variável API_KEY não definida no ambiente de build.");
+    return null;
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -15,10 +14,6 @@ const cleanOutput = (text: string): string => {
   if (!text) return "";
   return text
     .replace(/[\$\*\_\#]/g, '')
-    .replace(/\\\[/g, '')
-    .replace(/\\\]/g, '')
-    .replace(/\\\(/g, '')
-    .replace(/\\\)/g, '')
     .trim();
 };
 
@@ -28,28 +23,34 @@ export const solveFromImage = async (
   mode: ResponseMode = ResponseMode.EXPLAINED
 ): Promise<string> => {
   const ai = getAI();
-  const model = thinking ? 'gemini-3-pro-preview' : 'gemini-3-flash-preview';
+  if (!ai) throw new Error("Configuração de API ausente.");
+
+  // Usando o modelo Flash por ser mais compatível e rápido para visão computacional
+  const modelName = 'gemini-3-flash-preview';
   
-  const simplePrompt = `ATUE COMO UM RESOLVEDOR DIRETO (MODO SIMPLES). Forneça APENAS o resultado. PROIBIDO símbolos como '$', '*', '_' ou '#'.`;
-  const explainedPrompt = `ATUE COMO UM RESOLVEDOR DIRETO (MODO EXPLICAÇÃO). Forneça o resultado e uma explicação curta de 2 frases. PROIBIDO símbolos como '$', '*', '_' ou '#'.`;
+  const prompt = mode === ResponseMode.SIMPLE 
+    ? "Resolva o cálculo da imagem. Dê apenas o resultado final. Não use símbolos como *, $, # ou markdown." 
+    : "Resolva o cálculo da imagem. Explique o passo a passo de forma muito breve (máximo 3 linhas). Não use símbolos markdown.";
 
-  const prompt = mode === ResponseMode.SIMPLE ? simplePrompt : explainedPrompt;
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: {
+        parts: [
+          { inlineData: { mimeType: "image/jpeg", data: base64Image } },
+          { text: prompt }
+        ]
+      },
+      config: {
+        temperature: 0.2,
+      }
+    });
 
-  const response = await ai.models.generateContent({
-    model: model,
-    contents: {
-      parts: [
-        { inlineData: { mimeType: "image/jpeg", data: base64Image } },
-        { text: prompt }
-      ]
-    },
-    config: {
-      thinkingConfig: thinking ? { thinkingBudget: 16384 } : undefined,
-      temperature: 0.1,
-    }
-  });
-
-  return cleanOutput(response.text || "Não foi possível processar.");
+    return cleanOutput(response.text || "Não foi possível extrair o texto da resposta.");
+  } catch (error: any) {
+    console.error("Erro na API Gemini (Visão):", error);
+    throw error;
+  }
 };
 
 export const chatWithProfessor = async (
@@ -57,25 +58,34 @@ export const chatWithProfessor = async (
   mode: ResponseMode = ResponseMode.EXPLAINED
 ): Promise<string> => {
   const ai = getAI();
+  if (!ai) throw new Error("Configuração de API ausente.");
+
   const instruction = mode === ResponseMode.SIMPLE 
-    ? 'Resolva diretamente sem explicações ou símbolos.' 
-    : 'Resolva e explique brevemente sem símbolos.';
+    ? 'Você é um professor direto. Dê apenas o resultado sem explicações ou símbolos.' 
+    : 'Você é um professor de exatas. Resolva e explique brevemente sem usar símbolos especiais.';
 
-  const chat = ai.chats.create({
-    model: 'gemini-3-pro-preview',
-    config: {
-      systemInstruction: instruction,
-      thinkingConfig: { thinkingBudget: 8192 }
-    }
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: message,
+      config: {
+        systemInstruction: instruction,
+        temperature: 0.4
+      }
+    });
 
-  const response = await chat.sendMessage({ message });
-  return cleanOutput(response.text || "Erro no processamento.");
+    return cleanOutput(response.text || "Erro na resposta do chat.");
+  } catch (error: any) {
+    console.error("Erro na API Gemini (Chat):", error);
+    throw error;
+  }
 };
 
 export const generateSpeech = async (text: string): Promise<Uint8Array | null> => {
   try {
     const ai = getAI();
+    if (!ai) return null;
+    
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text: text }] }],
